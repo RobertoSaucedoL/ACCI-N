@@ -1,0 +1,801 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Diagnóstico y Compromisos PORTA</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700;800&display=swap">
+<style>
+/* Layout: tablero de dirección a todo el ancho. Una banda azul profundo lleva el veredicto y las cifras;
+   debajo, rejilla densa de dos columnas con tablas compactas. El naranja se reserva para lo que pide decisión. */
+:root{
+  --bg:#FFFFFF; --surface:#F2F4F7; --surface-2:#E6EAEF; --ink:#15212F; --ink-2:#2E3A47; --muted:#475664; --line:#D3DAE1;
+  --band:#15212F; --band-ink:#FFFFFF; --band-muted:#B7C3CF; --band-line:rgba(130,150,169,.4);
+  --accent:#D98918; --accent-soft:#FAEEDF; --calm-soft:#E6EAEF;
+  --mark:#8296A9; --mark-strong:#2E3A47; --mark-alert:#D98918; --grid:#E3E8ED;
+  --font:"Montserrat","Segoe UI",system-ui,-apple-system,sans-serif;
+  --r:10px; --r-lg:16px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15212F; --surface:#1E2B3A; --surface-2:#2E3A47; --ink:#FFFFFF; --ink-2:#E3E8EE; --muted:#A9B7C5; --line:#3A4858;
+    --band:#2E3A47; --band-ink:#FFFFFF; --band-muted:#C3CDD7; --band-line:rgba(130,150,169,.5);
+    --accent:#D98918; --accent-soft:#3A3326; --calm-soft:#2E3A47;
+    --mark:#8296A9; --mark-strong:#E3E8EE; --mark-alert:#D98918; --grid:#2A3747;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15212F; --surface:#1E2B3A; --surface-2:#2E3A47; --ink:#FFFFFF; --ink-2:#E3E8EE; --muted:#A9B7C5; --line:#3A4858;
+  --band:#2E3A47; --band-ink:#FFFFFF; --band-muted:#C3CDD7; --band-line:rgba(130,150,169,.5);
+  --accent:#D98918; --accent-soft:#3A3326; --calm-soft:#2E3A47;
+  --mark:#8296A9; --mark-strong:#E3E8EE; --mark-alert:#D98918; --grid:#2A3747;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-weight:300;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+b,strong{font-weight:700}
+h1,h2,h3,p,ul,ol,figure{margin:0}
+ul{padding:0;list-style:none}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1560px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+
+/* ---------- Banda ---------- */
+.band{background:var(--band);color:var(--band-ink);position:relative;overflow:hidden}
+.band-in{position:relative;padding-block:22px 18px;display:flex;flex-direction:column;gap:12px}
+.deco{position:absolute;right:-70px;top:-90px;width:300px;height:300px;pointer-events:none}
+.deco .ring{position:absolute;inset:0;border:2px solid var(--mark);border-radius:50%;opacity:.5}
+.deco .semi{position:absolute;left:58px;bottom:36px;width:112px;height:56px;background:var(--accent);border-radius:112px 112px 0 0}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:clamp(22px,3vw,36px);font-weight:800;line-height:1.08;text-transform:uppercase;letter-spacing:.01em;text-wrap:balance;max-width:21em}
+.veredicto{font-size:clamp(15px,1.45vw,18px);line-height:1.45;max-width:66em;margin-top:2px}
+.veredicto strong{color:var(--accent)}
+.pide{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 22px;font-size:13px;max-width:1040px}
+.pide li{padding-top:8px;border-top:1px solid var(--band-line);color:var(--band-muted)}
+.pide b{display:block;color:var(--band-ink)}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 22px;margin-top:6px;max-width:1040px}
+.kpi{display:flex;flex-direction:column;gap:1px;padding-top:10px;border-top:2px solid var(--accent);min-width:0}
+.k-l{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--band-muted)}
+.k-v{font-size:clamp(22px,2.2vw,30px);font-weight:800;line-height:1.15}
+.k-s{font-size:11.5px;color:var(--band-muted)}
+
+/* ---------- Secciones ---------- */
+.sec{padding-block:22px}
+.sec + .sec{border-top:1px solid var(--line)}
+.sec-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin-bottom:12px}
+h2{font-size:17px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;line-height:1.2;text-wrap:balance}
+.sub{font-size:12.5px;color:var(--muted)}
+h3{font-size:13px;font-weight:700}
+.g2{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:26px}
+.g2 > *{min-width:0}
+.lbl-s{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* ---------- Gráficas ---------- */
+svg{display:block;max-width:100%}
+svg text{font-family:var(--font)}
+.b{fill:var(--mark)} .b.alert{fill:var(--mark-alert)} .b.strong{fill:var(--mark-strong)}
+.gridl{stroke:var(--grid);stroke-width:1}
+.base{stroke:var(--muted);stroke-width:1}
+.ref{stroke:var(--ink-2);stroke-width:1}
+.planm{stroke:var(--mark-strong);stroke-width:2;stroke-linecap:round}
+.axis-t{fill:var(--muted);font-size:10.5px;font-weight:300}
+.val-t{fill:var(--ink);font-size:11px;font-weight:700}
+.hit{cursor:default;outline:none}
+.hit .hov{fill:var(--ink);opacity:0}
+.hit:hover .hov,.hit:focus-visible .hov{opacity:.06}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--muted);margin:2px 0 6px}
+.lg{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--mark)}
+.sw.alert{background:var(--mark-alert)} .sw.strong{background:var(--mark-strong)}
+.sw.tick{height:2px;width:14px;border-radius:1px;background:var(--mark-strong)}
+.sw.rule{height:1px;width:16px;border-radius:0;background:var(--ink-2)}
+details.datos{margin-top:6px;font-size:12px}
+details.datos summary{cursor:pointer;color:var(--muted);font-weight:700;font-size:11.5px;width:max-content}
+.scroll{overflow-x:auto}
+#tip{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:8px;padding:8px 10px;font-size:11.5px;line-height:1.45;max-width:260px;box-shadow:0 6px 18px rgba(21,33,47,.25)}
+#tip b{display:block;font-size:12px;margin-bottom:2px}
+#tip .tr{display:flex;justify-content:space-between;gap:14px}
+#tip .tr span:last-child{font-weight:700}
+
+/* ---------- Puente ---------- */
+.bridge{display:flex;flex-direction:column}
+.br{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(0,1.5fr) 74px;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+.br:last-child{border-bottom:0}
+.br-n{font-size:12.5px;font-weight:700;line-height:1.25}
+.br-n small{display:block;font-weight:300;font-size:11px;color:var(--muted)}
+.br-t{position:relative;height:16px}
+.br-t i{position:absolute;top:1px;bottom:1px;border-radius:3px;background:var(--mark)}
+.br-t i.neg{background:var(--mark-alert)} .br-t i.tot{background:var(--mark-strong)}
+.br-v{text-align:right;font-weight:700;font-size:12.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.note{font-size:12px;color:var(--muted);margin-top:8px;max-width:70em}
+
+/* ---------- Simulador ---------- */
+.sim{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;max-width:1240px}
+.sim > *{min-width:0}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.btn,.chip{font-family:var(--font);font-size:11.5px;font-weight:700;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
+.btn:hover,.chip:hover{border-color:var(--ink-2)}
+.chip[aria-pressed="true"],.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#15212F}
+.sl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;margin-bottom:10px}
+.sl label{font-size:12.5px}
+.sl output{font-weight:700;font-variant-numeric:tabular-nums}
+.sl input{grid-column:1 / -1;width:100%;accent-color:var(--accent);margin:0}
+.outs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
+.out{border-top:1px solid var(--line);padding-top:6px}
+.out .v{font-size:22px;font-weight:800;line-height:1.2}
+.out.big .v{font-size:30px}
+.meter{position:relative;height:10px;border-radius:5px;background:var(--surface-2);margin:26px 0 30px}
+.meter i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:var(--mark-strong)}
+.meter i.neg{background:var(--mark-alert)}
+.meter .mk{position:absolute;top:-5px;bottom:-5px;width:1px;background:var(--ink)}
+.meter .mk span{position:absolute;white-space:nowrap;font-size:10.5px;color:var(--muted);transform:translateX(-50%)}
+.meter .mk.up span{bottom:16px} .meter .mk.dn span{top:18px}
+.meter .mk.edge span{transform:translateX(-100%)}
+.bul li{position:relative;padding-left:14px;margin-bottom:7px;font-size:13px}
+.bul li::before{content:"";position:absolute;left:0;top:.62em;width:6px;height:6px;border-radius:50%;background:var(--mark)}
+
+/* ---------- Tablas ---------- */
+table{border-collapse:collapse;width:100%}
+.t{font-size:12.5px;font-variant-numeric:tabular-nums}
+.t th{text-align:left;font-weight:700;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--ink-2);white-space:nowrap}
+.t td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.t .num{text-align:right;white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;color:var(--ink)}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%}
+.pill.contra{background:var(--accent-soft)} .pill.contra::before{background:var(--accent)}
+.pill.favor{background:var(--calm-soft)} .pill.favor::before{background:transparent;box-shadow:inset 0 0 0 1.5px var(--mark)}
+
+/* ---------- Diagnóstico por línea ---------- */
+.md{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:24px;align-items:start}
+.md > *{min-width:0}
+.er tr.sel{cursor:pointer}
+.er tr.sel:hover td{background:var(--surface)}
+.er tr.on td{background:var(--surface)}
+.er tr.on td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+.er td.ln{font-weight:700}
+.er tr.subr td.ln{font-weight:300;padding-left:22px}
+.er tr.info td{color:var(--muted)}
+.er tr.info td.ln{font-weight:700;color:var(--ink-2)}
+.er td.ln{min-width:190px}
+.er .rsp{display:block;font-weight:300;font-size:11.5px;color:var(--muted)}
+.det{background:var(--surface);border-radius:var(--r-lg);padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.det-h{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.det-h h3{font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.tag{font-size:11px;font-weight:700;border:1px solid var(--mark);border-radius:999px;padding:2px 9px;white-space:nowrap}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 14px}
+.stat{border-top:1px solid var(--line);padding-top:5px;min-width:0}
+.stat .v{font-weight:800;font-size:15px;line-height:1.25}
+.minis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px}
+.minis.one{grid-template-columns:minmax(0,1fr)}
+.mini figcaption{font-size:12px;margin-bottom:2px}
+.mini figcaption span{color:var(--muted)}
+.postura{border-left:3px solid var(--accent);padding:2px 0 2px 12px;font-size:13.5px}
+.postura .lbl-s{display:block;margin-bottom:1px}
+.cl li{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:2px 8px;padding:6px 0;border-top:1px solid var(--line);font-size:12.5px}
+.cl .n{font-weight:800}
+.cl .f{font-weight:700;white-space:nowrap;text-align:right}
+.cl .r{grid-column:2 / -1;font-size:11.5px;color:var(--muted)}
+
+/* ---------- Plan ---------- */
+.filters{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.frow{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.frow .lbl-s{margin-right:4px}
+.count{font-size:12px;color:var(--muted)}
+.plan td.c-n{font-weight:800;width:34px}
+.plan td.c-t{min-width:260px}
+.plan .ln-t{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-right:6px}
+.plan .key{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--accent);color:#15212F;border-radius:3px;padding:0 5px}
+.plan td.c-r{font-weight:700;min-width:120px}
+.plan td.c-r small{display:block;font-weight:300;color:var(--muted);font-size:11.5px}
+.plan td.c-f{font-weight:700;white-space:nowrap}
+.plan td.c-f small{display:block;font-weight:300;color:var(--muted);font-size:11.5px;white-space:normal;max-width:15em}
+.plan td.c-m{min-width:200px}
+.plan td.c-i{min-width:170px;color:var(--ink-2)}
+#tsv{width:100%;height:120px;margin-top:8px;font-family:ui-monospace,Consolas,monospace;font-size:11px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--r);padding:8px}
+
+/* ---------- Posturas ---------- */
+.pos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px 26px}
+.po{border-top:2px solid var(--ink);padding-top:10px;display:flex;flex-direction:column;gap:7px;min-width:0}
+.po h3{font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;line-height:1.25}
+.po p{font-size:13px}
+.po .cap{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:6px}
+.fu{columns:2;column-gap:32px;font-size:12.5px;color:var(--muted)}
+.fu li{break-inside:avoid;margin-bottom:6px;padding-left:14px;position:relative}
+.fu li::before{content:"";position:absolute;left:0;top:.62em;width:6px;height:6px;border-radius:50%;background:var(--mark)}
+.foot{font-size:11.5px;color:var(--muted);padding-block:14px 26px;border-top:1px solid var(--line)}
+
+/* ---------- Adaptación ---------- */
+@media (max-width:1180px){
+  .pos{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:1260px){
+  .md{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:980px){
+  .g2{grid-template-columns:minmax(0,1fr)}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  .deco{display:none}
+  .pide{grid-template-columns:minmax(0,1fr)}
+  .kpis{gap:10px 12px}
+  .k-v{font-size:18px}
+  .sim{grid-template-columns:minmax(0,1fr)}
+  .pos{grid-template-columns:minmax(0,1fr)}
+  .fu{columns:1}
+  .minis{grid-template-columns:minmax(0,1fr)}
+  .br{grid-template-columns:minmax(0,1fr) 74px}
+  .br-t{grid-column:1 / -1;order:3}
+  .plan thead{display:none}
+  .plan tr{display:block;padding:10px 0;border-bottom:1px solid var(--line)}
+  .plan td{display:block;border:0;padding:2px 0;min-width:0 !important;width:auto !important}
+  .plan td[data-l]::before{content:attr(data-l) ": ";font-weight:700;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .plan td.c-n{display:inline-block;margin-right:6px}
+  .plan td.c-r small,.plan td.c-f small{display:inline;margin-left:6px}
+  .er .hide-s{display:none}
+  .er td.ln{min-width:0}
+  .er .pill{white-space:normal;border-radius:10px;font-size:10.5px}
+  .er td,.er th{padding-left:5px;padding-right:5px}
+}
+@media (prefers-reduced-motion:no-preference){ html{scroll-behavior:smooth} }
+</style>
+
+<header class="band">
+  <div class="wrap band-in">
+    <div class="deco" aria-hidden="true"><span class="ring"></span><span class="semi"></span></div>
+    <p class="eyebrow">PORTA · Cierre de octubre 2026 · Enero–octubre</p>
+    <h1>Diagnóstico financiero y plan de compromisos</h1>
+    <p class="veredicto"><strong>Veredicto.</strong> PORTA tiene margen y le falta venta para su estructura: los tres meses que vendieron menos de $9M perdieron dinero, y octubre ($7.93M) dejó un EBITDA de −$1.84M.</p>
+    <ul class="pide">
+      <li><b>Vender sobre el equilibrio</b>Noviembre y diciembre necesitan $22.1M entre los dos para no restar al año.</li>
+      <li><b>Convertir inventario en caja</b>$7.2M a febrero para bajar una deuda bancaria de $20.38M.</li>
+    </ul>
+    <div class="kpis">
+      <div class="kpi"><span class="k-l">Ventas netas Ene–Oct</span><span class="k-v">$116.68M</span><span class="k-s">−27.0% vs plan · +9.0% vs 2025</span></div>
+      <div class="kpi"><span class="k-l">Margen bruto</span><span class="k-v">53.8%</span><span class="k-s">plan 52.1% · 2025: 41.8%</span></div>
+      <div class="kpi"><span class="k-l">Gasto sobre venta</span><span class="k-v">44.3%</span><span class="k-s">plan 27.7% · $7.37M sobre plan</span></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section class="sec" id="compromisos">
+  <div class="sec-h"><h2>Plan de compromisos</h2><span class="sub">Un responsable, una fecha y una meta medible por compromiso. Las metas son propuestas para confirmar en la junta.</span></div>
+  <div class="filters">
+    <div class="frow" id="fResp" role="group" aria-label="Filtrar por responsable"><span class="lbl-s">Responsable</span></div>
+    <div class="frow">
+      <span class="lbl-s">Ver</span>
+      <button class="chip" type="button" id="fKey" aria-pressed="false">Solo clave</button>
+      <span class="lbl-s" style="margin-left:10px">Orden</span>
+      <button class="chip" type="button" id="oLinea" aria-pressed="true">Por línea</button>
+      <button class="chip" type="button" id="oFecha" aria-pressed="false">Por fecha</button>
+      <button class="btn primary" type="button" id="copy" style="margin-left:auto">Copiar para el tracker</button>
+    </div>
+    <div class="count" id="count" role="status"></div>
+  </div>
+  <div class="scroll">
+    <table class="t plan" id="tblPlan">
+      <thead><tr><th>#</th><th>Compromiso</th><th>Responsable</th><th>Fecha compromiso</th><th>Meta o entregable</th><th>Impacto</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <textarea id="tsv" hidden readonly aria-label="Compromisos en formato para pegar en el tracker"></textarea>
+</section>
+
+<section class="sec" id="posturas">
+  <div class="sec-h"><h2>Posturas de Finanzas</h2></div>
+  <div class="pos">
+    <article class="po">
+      <h3>Rentabilidad antes que volumen</h3>
+      <p><b>El dato.</b> Retail es 88% de la venta del detalle y deja 12.8% de margen neto neto cobrando a 89 días. Cinco productos con margen negativo venden $18.9M.</p>
+      <p><b>Qué implica.</b> Aceptar perder venta que no deja margen y sostener el precio piso con Grupo Walmart. El arancel 2026 al importado (35% en botellas, 20% en hogar) da espacio para defender precio.</p>
+      <p class="cap"><b>Capstone.</b> Toda empresa parte de una estrategia básica, líder en costo o diferenciador, y cada área decide en función de ella.</p>
+    </article>
+    <article class="po">
+      <h3>La estructura se dimensiona al piso de venta</h3>
+      <p><b>El dato.</b> El gasto promedia $5.17M al mes; el plan lo suponía en 27.7% de una venta que no llegó. Tres meses de venta baja restaron $3.97M.</p>
+      <p><b>Qué implica.</b> Presupuestar 2027 sobre el escenario conservador. Lo que venga arriba es utilidad, no permiso para gastar.</p>
+      <p class="cap"><b>Capstone.</b> Se planea con peor caso y mejor caso, y la caja de cierre se asegura con el peor.</p>
+    </article>
+    <article class="po">
+      <h3>Se compra contra pronóstico menos inventario</h3>
+      <p><b>El dato.</b> El inventario subió $5.09M en octubre, el mes de la segunda venta más baja, y llegó a $37.17M.</p>
+      <p><b>Qué implica.</b> El OTB manda sobre el tamaño de lote y sobre la urgencia de cada área. Producir de más dejó de ser la opción segura.</p>
+      <p class="cap"><b>Capstone.</b> Producción programa el pronóstico de venta menos el inventario disponible; el exceso de inventario cuesta y presiona la utilidad.</p>
+    </article>
+    <article class="po">
+      <h3>Finanzas valida antes, no explica después</h3>
+      <p><b>El dato.</b> La nómina va $4.36M sobre el plan y Otros gestionable al doble de lo presupuestado.</p>
+      <p><b>Qué implica.</b> Visto bueno de Finanzas en toda contratación y dictamen presupuestal en toda orden de compra. El área que gasta cede algo de velocidad a cambio de control.</p>
+      <p class="cap"><b>Capstone.</b> Finanzas vigila el gasto y revisa que los pronósticos y precios de las demás áreas sean realistas.</p>
+    </article>
+    <article class="po">
+      <h3>Primero la caja: pagar deuda antes de crecer</h3>
+      <p><b>El dato.</b> El pasivo equivale a 85% del activo. Deuda bancaria de $20.38M, gasto financiero de $821K en octubre y caja de $4.58M.</p>
+      <p><b>Qué implica.</b> Moldes y proyectos esperan; cada peso liberado de inventario y cobranza va a deuda. Los proveedores son socios, no banco: alargarles el pago pone en riesgo el abasto.</p>
+      <p class="cap"><b>Capstone.</b> Quedarse sin caja obliga al préstamo de emergencia, el financiamiento más caro; y cuando el pago a proveedores se alarga, estos retienen material.</p>
+    </article>
+    <article class="po">
+      <h3>Una línea, un responsable, una cifra semanal</h3>
+      <p><b>El dato.</b> $8.05M de nómina sin área; el resultado contable y el EBITDA difieren en $12.11M; el detalle comercial no suma al ER.</p>
+      <p><b>Qué implica.</b> Junta semanal de 30 minutos con una página. Cada responsable llega con su cifra y su siguiente paso.</p>
+      <p class="cap"><b>Capstone.</b> El desempeño se mide con un tablero balanceado (finanzas, procesos internos, clientes y aprendizaje) y las áreas coordinan sus decisiones antes de ejecutarlas.</p>
+    </article>
+  </div>
+</section>
+
+<section class="sec g2" id="vista">
+  <div>
+    <div class="sec-h"><h2>El año en una vista</h2><span class="sub">Venta neta y EBITDA por mes, millones de pesos</span></div>
+    <div class="legend">
+      <span class="lg"><i class="sw"></i>Venta neta</span>
+      <span class="lg"><i class="sw alert"></i>Mes con EBITDA negativo</span>
+      <span class="lg"><i class="sw tick"></i>Plan del mes</span>
+      <span class="lg"><i class="sw rule"></i>Punto de equilibrio del ER, promedio $10.5M</span>
+    </div>
+    <div id="chartMain"></div>
+    <details class="datos"><summary>Ver datos</summary><div class="scroll" id="tblMain"></div></details>
+    <p class="note">Los tres meses por debajo de $9M (enero, agosto y octubre) restaron $3.97M de EBITDA; los otros siete sumaron $12.60M. El punto de equilibrio del ER promedia $10.5M al mes.</p>
+  </div>
+  <div>
+    <div class="sec-h"><h2>Quién responde por la brecha contra el plan</h2><span class="sub">Del EBITDA del plan al real, Ene–Oct, millones de pesos</span></div>
+    <div class="bridge" id="bridge"></div>
+    <p class="note">De los $28.55M de brecha, 72% es venta que no llegó, 26% es gasto por encima del plan y 2% es gasto financiero. El costo es la única línea que ayuda.</p>
+  </div>
+</section>
+
+<section class="sec" id="cierre">
+  <div class="sec-h"><h2>Cierre 2026: qué tiene que pasar en noviembre y diciembre</h2><span class="sub">Sensibilidad, no pronóstico. Margen bruto del año (53.8%) y gasto financiero promedio de septiembre y octubre ($0.78M al mes).</span></div>
+  <div class="sim">
+    <div>
+      <div class="presets" role="group" aria-label="Escenarios">
+        <button class="btn" type="button" data-p="tend">Tendencia del año</button>
+        <button class="btn" type="button" data-p="flujo" aria-pressed="true">Venta del flujo</button>
+        <button class="btn" type="button" data-p="ppto">Venta de presupuesto</button>
+      </div>
+      <div class="sl"><label for="sNov">Venta neta de noviembre</label><output id="oNov" for="sNov"></output><input type="range" id="sNov" min="8" max="18" step="0.01" value="13.9"></div>
+      <div class="sl"><label for="sDic">Venta neta de diciembre</label><output id="oDic" for="sDic"></output><input type="range" id="sDic" min="7" max="14" step="0.01" value="11.2"></div>
+      <div class="sl"><label for="sGas">Gasto mensual (nómina, fletes, rentas y otros)</label><output id="oGas" for="sGas"></output><input type="range" id="sGas" min="4.2" max="5.6" step="0.01" value="5.17"></div>
+    </div>
+    <div>
+      <div class="outs">
+        <div class="out big"><span class="lbl-s">EBITDA 2026</span><div class="v" id="rAno"></div></div>
+        <div class="out big"><span class="lbl-s">EBITDA nov–dic</span><div class="v" id="rND"></div></div>
+        <div class="out"><span class="lbl-s">Venta neta 2026</span><div class="v" id="rVta"></div></div>
+        <div class="out"><span class="lbl-s">Venta nov + dic para no restar</span><div class="v" id="rBE"></div></div>
+      </div>
+      <div class="meter" aria-hidden="true"><i id="mFill"></i>
+        <div class="mk up" id="mk1"><span>Acumulado a octubre $8.63M</span></div>
+        <div class="mk dn edge" id="mk2"><span>Presupuesto 10+2 $15.23M</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="lineas">
+  <div class="sec-h"><h2>Diagnóstico por línea</h2></div>
+  <div class="md">
+    <div>
+      <div class="scroll">
+        <table class="t er" id="tblER">
+          <thead><tr><th>Línea y responsable</th><th class="num">Real</th><th class="num">% venta</th><th class="num hide-s">Plan</th><th class="num hide-s">2025</th><th>Lectura</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="note">Elige una línea para ver su lectura, su postura y sus compromisos. Cifras Ene–Oct 2026. Costos y gastos: plan y 2025 como porcentaje de la venta neta. Canales: detalle por cliente y producto ($107.48M), direccional; no suma exactamente al ER. Punto naranja: en contra. Aro azul: a favor.</p>
+    </div>
+    <div class="det" id="det" aria-live="polite"></div>
+  </div>
+</section>
+
+<p class="foot">PORTA · Cierre de octubre 2026 · Cifras en pesos mexicanos.</p>
+</main>
+<div id="tip" hidden></div>
+<script>
+(function(){
+"use strict";
+const $=(s,r)=>(r||document).querySelector(s);
+const NS="http://www.w3.org/2000/svg";
+const S=(tag,at,par)=>{const e=document.createElementNS(NS,tag);for(const k in at)e.setAttribute(k,at[k]);if(par)par.appendChild(e);return e;};
+const H=(tag,cls,txt,par)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;if(par)par.appendChild(e);return e;};
+const sum=a=>a.reduce((x,y)=>x+y,0);
+
+/* ---------- Datos: ER oficial Ene–Oct 2026, balance y presupuesto ---------- */
+const MES=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct"];
+const D={
+  vn:[7184838,10802676,12328873,10450709,16669045,16507870,12163044,8670154,13974014,7929886],
+  plan:[10028235,10773301,15627900,13682558,18615443,20835655,19067094,17655181,19951338,13502908],
+  cd:[3581963,4777322,5467751,4499737,8038185,6782195,5630824,4692124,6602246,3859867],
+  nom:[2608167,3059937,2499587,3126812,2776136,3006218,2433863,3473114,2826864,3242434],
+  sop:[674116,653704,689317,768074,775720,787003,840558,719688,700922,777982],
+  smk:[147901,160724,138381,141605,125591,95601,81548,82765,42066,42559],
+  sco:[368935,407917,633068,619562,617924,632453,646144,639169,716266,691266],
+  sad:[800716,846113,627020,648480,643969,656223,643482,635100,543965,539602],
+  fle:[584489,392725,1046835,1267625,1721145,1575298,1778288,932528,789427,519016],
+  oge:[254045,230823,340702,212631,311308,324360,352002,209061,328968,365149],
+  fin:[151538,242131,283777,-89756,50823,161953,128526,-58908,736928,820884],
+  ebitda:[-674168,1270892,1798980,586414,2815134,3551950,861073,-1451302,1713807,-1844470],
+  pe:[8366642,9151138,9690662,11061506,11691389,12192048,11240595,11130308,9979997,10329977],
+  inv:[24987734,27167743,30326189,34776309,33865543,34973018,31952614,28624047,32079493,37172138],
+  deuda:[10383231,10164578,9659528,9511229,9729206,9928674,9708561,21780053,21402140,20382809]
+};
+D.areas=MES.map((_,i)=>D.sop[i]+D.smk[i]+D.sco[i]+D.sad[i]);
+D.sinArea=MES.map((_,i)=>D.nom[i]-D.areas[i]);
+
+const sg=v=>v<0?"−":"";
+const fM=(v,d)=>sg(v)+"$"+(Math.abs(v)/1e6).toFixed(d==null?2:d)+"M";
+const fMs=(v,d)=>(v<0?"−":"+")+"$"+(Math.abs(v)/1e6).toFixed(d==null?2:d)+"M";
+const fK=v=>sg(v)+"$"+Math.round(Math.abs(v)/1e3)+"K";
+const pc=(v,d)=>sg(v)+Math.abs(v).toFixed(d==null?1:d)+"%";
+
+/* ---------- Tooltip ---------- */
+const tip=$("#tip");
+function tipShow(html,x,y){
+  tip.innerHTML=html;tip.hidden=false;
+  const r=tip.getBoundingClientRect();let L=x+14,T=y+14;
+  if(L+r.width>window.innerWidth-8)L=x-r.width-14;if(L<8)L=8;
+  if(T+r.height>window.innerHeight-8)T=y-r.height-14;if(T<8)T=8;
+  tip.style.left=L+"px";tip.style.top=T+"px";
+}
+function tipHide(){tip.hidden=true;}
+function bindTip(el,fn){
+  el.addEventListener("pointermove",e=>tipShow(fn(),e.clientX,e.clientY));
+  el.addEventListener("pointerleave",tipHide);
+  el.addEventListener("focus",()=>{const r=el.getBoundingClientRect();tipShow(fn(),r.left+r.width/2,r.top+10);});
+  el.addEventListener("blur",tipHide);
+}
+const trow=(a,b)=>'<div class="tr"><span>'+a+'</span><span>'+b+'</span></div>';
+
+function barPath(x,y,w,h,mode){
+  if(h<0.6)return "M"+x+","+y+"h"+w+"v1h"+(-w)+"z";
+  const r=Math.min(4,w/2,h);
+  if(mode==="up")return "M"+x+","+(y+h)+"V"+(y+r)+"Q"+x+","+y+" "+(x+r)+","+y+"H"+(x+w-r)+"Q"+(x+w)+","+y+" "+(x+w)+","+(y+r)+"V"+(y+h)+"Z";
+  if(mode==="down")return "M"+x+","+y+"H"+(x+w)+"V"+(y+h-r)+"Q"+(x+w)+","+(y+h)+" "+(x+w-r)+","+(y+h)+"H"+(x+r)+"Q"+x+","+(y+h)+" "+x+","+(y+h-r)+"Z";
+  return "M"+x+","+y+"h"+w+"v"+h+"h"+(-w)+"z";
+}
+
+/* ---------- Gráfica principal ---------- */
+function drawMain(){
+  const host=$("#chartMain");host.innerHTML="";
+  const W=Math.max(280,host.clientWidth),pl=30,pr=6,t1=18,h1=206,gap=34,h2=94,xb=20,Ht=t1+h1+gap+h2+xb,n=10;
+  const svg=S("svg",{width:W,height:Ht,viewBox:"0 0 "+W+" "+Ht,role:"group","aria-label":"Venta neta mensual contra plan y punto de equilibrio, y EBITDA mensual, enero a octubre de 2026"},host);
+  const bw=(W-pl-pr)/n,w=Math.min(24,bw*0.5);
+  const yMax=22e6,y1=v=>t1+h1*(1-v/yMax);
+  [0,5,10,15,20].forEach(m=>{
+    S("line",{x1:pl,x2:W-pr,y1:y1(m*1e6),y2:y1(m*1e6),class:m?"gridl":"base"},svg);
+    S("text",{x:pl-6,y:y1(m*1e6)+3.5,"text-anchor":"end",class:"axis-t"},svg).textContent=m;
+  });
+  const p2=t1+h1+gap,eMax=4e6,eMin=-2.6e6,y2=v=>p2+h2*(1-(v-eMin)/(eMax-eMin));
+  [-2,0,2,4].forEach(m=>{
+    S("line",{x1:pl,x2:W-pr,y1:y2(m*1e6),y2:y2(m*1e6),class:m?"gridl":"base"},svg);
+    S("text",{x:pl-6,y:y2(m*1e6)+3.5,"text-anchor":"end",class:"axis-t"},svg).textContent=(m<0?"−":"")+Math.abs(m);
+  });
+  S("text",{x:pl,y:p2-12,class:"axis-t"},svg).textContent="EBITDA del mes";
+  S("text",{x:pl,y:t1-7,class:"axis-t"},svg).textContent="Venta neta del mes";
+  const PE=sum(D.pe)/n;
+  S("line",{x1:pl,x2:W-pr,y1:y1(PE),y2:y1(PE),class:"ref"},svg);
+  for(let i=0;i<n;i++){
+    const cx=pl+bw*i+bw/2,neg=D.ebitda[i]<0;
+    const g=S("g",{class:"hit",tabindex:"0",role:"img","aria-label":MES[i]+": venta neta "+fM(D.vn[i])+", plan "+fM(D.plan[i])+", EBITDA "+fM(D.ebitda[i])},svg);
+    S("rect",{x:cx-bw/2,y:t1-4,width:bw,height:h1+gap+h2+4,class:"hov"},g);
+    S("path",{d:barPath(cx-w/2,y1(D.vn[i]),w,y1(0)-y1(D.vn[i]),"up"),class:"b"+(neg?" alert":"")},g);
+    S("line",{x1:cx-w/2-3,x2:cx+w/2+3,y1:y1(D.plan[i]),y2:y1(D.plan[i]),class:"planm"},g);
+    const yz=y2(0),ye=y2(D.ebitda[i]);
+    if(neg)S("path",{d:barPath(cx-w/2,yz,w,ye-yz,"down"),class:"b alert"},g);
+    else S("path",{d:barPath(cx-w/2,ye,w,yz-ye,"up"),class:"b"},g);
+    if(neg){
+      S("text",{x:cx,y:y1(D.vn[i])-5,"text-anchor":"middle",class:"val-t"},g).textContent=fM(D.vn[i],1);
+      S("text",{x:cx,y:ye+12,"text-anchor":"middle",class:"val-t"},g).textContent=fM(D.ebitda[i],1);
+    }
+    S("text",{x:cx,y:Ht-5,"text-anchor":"middle",class:"axis-t"},svg).textContent=bw>=30?MES[i]:MES[i][0];
+    bindTip(g,()=>"<b>"+MES[i]+" 2026</b>"+trow("Venta neta",fM(D.vn[i]))+trow("Plan del mes",fM(D.plan[i]))+trow("Equilibrio del ER",fM(D.pe[i]))+trow("EBITDA",fM(D.ebitda[i]))+trow("Margen EBITDA",pc(D.ebitda[i]/D.vn[i]*100)));
+  }
+}
+function tableMain(){
+  const host=$("#tblMain");host.innerHTML="";
+  const t=H("table","t",null,host),hr=H("tr",null,null,H("thead",null,null,t));
+  ["Mes","Venta neta","Plan","% del plan","Equilibrio ER","EBITDA","Margen"].forEach((h,i)=>H("th",i?"num":null,h,hr));
+  const tb=H("tbody",null,null,t);
+  MES.forEach((m,i)=>{const tr=H("tr",null,null,tb);
+    [m,fM(D.vn[i]),fM(D.plan[i]),pc(D.vn[i]/D.plan[i]*100),fM(D.pe[i]),fM(D.ebitda[i]),pc(D.ebitda[i]/D.vn[i]*100)].forEach((c,j)=>H("td",j?"num":null,c,tr));});
+}
+
+/* ---------- Puente plan → real ---------- */
+const BR=[
+  {n:"EBITDA del plan",r:"Enero–octubre",v:37181974,t:1},
+  {n:"Venta que no llegó",r:"Gerardo Sordo · tres canales",v:-22432932},
+  {n:"Margen bruto mejor que el plan",r:"",v:1959525},
+  {n:"Nómina sobre plan",r:"Verónica Silva (RH) · Alejandro Gámez (DG)",v:-4355918},
+  {n:"Otros gastos y rentas sobre plan",r:"Raúl Andrés (Finanzas)",v:-2024229},
+  {n:"Fletes sobre plan",r:"Noé (Logística)",v:-991075},
+  {n:"Gastos financieros sobre plan",r:"Raúl Andrés (Finanzas)",v:-709034},
+  {n:"EBITDA real",r:"Alejandro Gámez (DG)",v:8628310,t:1}
+];
+function drawBridge(){
+  const host=$("#bridge");host.innerHTML="";const mx=BR[0].v;let run=0;
+  BR.forEach(b=>{
+    const row=H("div","br",null,host),nm=H("div","br-n",b.n,row);if(b.r)H("small",null,b.r,nm);
+    const tr=H("div","br-t",null,row),bar=document.createElement("i");let a,wd;
+    if(b.t){a=0;wd=b.v;run=b.v;bar.className="tot";}
+    else{a=Math.min(run,run+b.v);wd=Math.abs(b.v);run+=b.v;if(b.v<0)bar.className="neg";}
+    bar.style.left=(a/mx*100)+"%";bar.style.width=Math.max(wd/mx*100,0.6)+"%";tr.appendChild(bar);
+    H("div","br-v",b.t?fM(b.v):fMs(b.v),row);
+  });
+}
+
+/* ---------- Simulador de cierre ---------- */
+const SIM={m:62748894/116681108,f:(736928+820884)/2,e:8628310,v:116681108};
+const PRE={tend:[11.76,10.25],flujo:[13.9,11.2],ppto:[17.41,12.1]};
+const sNov=$("#sNov"),sDic=$("#sDic"),sGas=$("#sGas");
+function sim(){
+  const n=+sNov.value*1e6,d=+sDic.value*1e6,g=+sGas.value*1e6;
+  const nd=(n+d)*SIM.m-2*g-2*SIM.f,an=SIM.e+nd,top=16e6;
+  $("#oNov").textContent=fM(n);$("#oDic").textContent=fM(d);$("#oGas").textContent=fM(g);
+  $("#rAno").textContent=fM(an);$("#rND").textContent=fMs(nd);$("#rVta").textContent=fM(SIM.v+n+d);$("#rBE").textContent=fM(2*(g+SIM.f)/SIM.m,1);
+  const f=$("#mFill");f.style.width=Math.max(0,Math.min(100,an/top*100))+"%";f.className=nd<0?"neg":"";
+  $("#mk1").style.left=(SIM.e/top*100)+"%";$("#mk2").style.left=(15234854/top*100)+"%";
+}
+function clearPre(){document.querySelectorAll(".presets .btn").forEach(b=>b.setAttribute("aria-pressed","false"));}
+[sNov,sDic,sGas].forEach(s=>s.addEventListener("input",()=>{clearPre();sim();}));
+document.querySelectorAll(".presets .btn").forEach(b=>b.addEventListener("click",()=>{
+  const p=PRE[b.dataset.p];sNov.value=p[0];sDic.value=p[1];sGas.value=5.17;clearPre();b.setAttribute("aria-pressed","true");sim();
+}));
+
+/* ---------- Mini gráficas ---------- */
+function mini(host,o){
+  const fig=H("figure","mini",null,host),cap=H("figcaption",null,null,fig);
+  H("b",null,o.title,cap);if(o.sub)H("span",null," · "+o.sub,cap);
+  if(o.series.length>1){const lg=H("div","legend",null,fig);o.series.forEach(s=>{const it=H("span","lg",null,lg);H("i","sw"+(s.cls?" "+s.cls:""),null,it);it.appendChild(document.createTextNode(s.name));});}
+  const box=H("div",null,null,fig);
+  const n=MES.length,tot=MES.map((_,i)=>sum(o.series.map(s=>s.vals[i])));
+  const W=Math.max(220,box.clientWidth),Hh=o.h||126,pl=2,pr=2,pt=18,pb=18;
+  let mx=Math.max.apply(null,tot.concat(o.ref?[o.ref]:[]))*1.02,mn=Math.min.apply(null,[0].concat(tot));if(mn<0)mn*=1.6;
+  const y=v=>pt+(Hh-pt-pb)*(1-(v-mn)/(mx-mn)),bw=(W-pl-pr)/n,w=Math.min(22,bw*0.56);
+  const svg=S("svg",{width:W,height:Hh,viewBox:"0 0 "+W+" "+Hh,role:"group","aria-label":o.title+", "+(o.sub||"")},box);
+  S("line",{x1:pl,x2:W-pr,y1:y(0),y2:y(0),class:"base"},svg);
+  for(let i=0;i<n;i++){
+    const cx=pl+bw*i+bw/2,hi=o.hi&&o.hi.indexOf(i)>=0;
+    const g=S("g",{class:"hit",tabindex:"0",role:"img","aria-label":MES[i]+": "+o.fmt(tot[i])},svg);
+    S("rect",{x:cx-bw/2,y:2,width:bw,height:Hh-pb-2,class:"hov"},g);
+    if(o.series.length>1){
+      let acc=0;o.series.forEach((s,k)=>{const v=s.vals[i],yb=y(acc)-(k?2:0),yt=y(acc+v);acc+=v;
+        S("path",{d:barPath(cx-w/2,yt,w,Math.max(0,yb-yt),k===o.series.length-1?"up":"flat"),class:"b"+(s.cls?" "+s.cls:"")},g);});
+    }else{
+      const v=tot[i],cls="b"+(hi?" alert":"");
+      if(v>=0)S("path",{d:barPath(cx-w/2,y(v),w,y(0)-y(v),"up"),class:cls},g);
+      else S("path",{d:barPath(cx-w/2,y(0),w,y(v)-y(0),"down"),class:cls},g);
+    }
+    if(o.lab&&o.lab.indexOf(i)>=0)S("text",{x:cx,y:(tot[i]>=0?y(tot[i])-4:y(tot[i])+12),"text-anchor":"middle",class:"val-t"},g).textContent=o.fmt(tot[i]);
+    S("text",{x:cx,y:Hh-5,"text-anchor":"middle",class:"axis-t"},svg).textContent=bw>=30?MES[i]:MES[i][0];
+    bindTip(g,()=>"<b>"+MES[i]+" 2026</b>"+(o.series.length>1?o.series.map(s=>trow(s.name,o.fmt(s.vals[i]))).join("")+trow("Total",o.fmt(tot[i])):trow(o.title,o.fmt(tot[i]))));
+  }
+  if(o.ref)S("line",{x1:pl,x2:W-pr,y1:y(o.ref),y2:y(o.ref),class:"ref"},svg);
+  const dt=H("details","datos",null,fig);H("summary",null,"Ver datos",dt);
+  const sc=H("div","scroll",null,dt),t=H("table","t",null,sc),hr=H("tr",null,null,H("thead",null,null,t));
+  H("th",null,"Mes",hr);o.series.forEach(s=>H("th","num",o.series.length>1?s.name:o.title,hr));if(o.series.length>1)H("th","num","Total",hr);
+  const tb=H("tbody",null,null,t);
+  MES.forEach((m,i)=>{const tr=H("tr",null,null,tb);H("td",null,m,tr);o.series.forEach(s=>H("td","num",o.fmt(s.vals[i]),tr));if(o.series.length>1)H("td","num",o.fmt(tot[i]),tr);});
+}
+function tbl(par,head,rows){
+  const sc=H("div","scroll",null,par),t=H("table","t",null,sc),hr=H("tr",null,null,H("thead",null,null,t));
+  head.forEach((h,i)=>H("th",i?"num":null,h,hr));const tb=H("tbody",null,null,t);
+  rows.forEach(r=>{const tr=H("tr",null,null,tb);r.forEach((c,i)=>H("td",i?"num":null,c,tr));});
+}
+const p1=v=>v.toFixed(1)+"%";
+
+/* ---------- Líneas del ER ---------- */
+const LINEAS=[
+ {fix:1,n:"Ventas netas",rt:"Gerardo Sordo · tres canales",real:"$116.68M",pct:"100%",plan:"$159.74M",a25:"$107.05M",pill:["contra","−27.0% vs plan"]},
+ {id:"retail",sub:1,n:"Retail",rt:"Julieta Cano",resp:["Comercial Retail"],real:"$94.83M",pct:"88.2%",plan:"—",a25:"$96.58M",pill:["contra","−1.8% vs 2025"],
+  stats:[["Margen neto neto","12.8%"],["Cargos sobre lo facturado","10.7%"],["Días de cobro","89"],["Margen para no destruir valor","24.4%"]],
+  lectura:[
+   "Grupo Walmart (Prichos + Nueva Walmart) concentra $75.09M, 70% de la venta del detalle, y baja 2.0% contra 2025: Prichos +4.9%, Nueva Walmart −14.3%.",
+   "Cobrando a ~95 días, Walmart necesita cerca de 26% de margen neto neto para no destruir valor. Prichos deja 14.9% y Nueva Walmart −4.5%.",
+   "Los cargos son el foco: Nueva Walmart acumula 17.5% de lo facturado (9.1% en 2025) y en octubre llegó a 43.3% ($1.43M).",
+   "Se pierde venta donde el margen es sano: Tiendas 3B −16.8% (sin pedidos en septiembre y octubre, con 27.8% de margen a 45 días) y Chedraui −27.0%.",
+   "Octubre: $4.70M, 28.3% menos que octubre de 2025, con margen neto neto de −9.6%."],
+  tabla:{head:["Cliente","Venta Ene–Oct","vs 2025","Margen neto neto","Cargos","Días de cobro"],rows:[
+   ["Prichos","$51.47M","+4.9%","14.9%","7.3%","94"],["Nueva Walmart","$23.62M","−14.3%","−4.5%","17.5%","95"],["Tiendas 3B","$8.81M","−16.8%","27.8%","0.0%","45"],
+   ["Chedraui","$2.83M","−27.0%","26.0%","21.6%","90"],["Soriana","$2.24M","+2.4%","33.5%","28.0%","90"],["Casa Ley","$1.22M","−34.2%","42.5%","12.6%","105"]]},
+  postura:"Con Grupo Walmart se defiende margen antes que volumen. El crecimiento se busca en las cadenas que pagan antes y dejan más."},
+ {id:"catalogo",sub:1,n:"Catálogo",rt:"Valerie",resp:["Comercial Catálogo"],real:"$6.95M",pct:"6.5%",plan:"—",a25:"$8.74M",pill:["contra","−20.4% vs 2025"],
+  stats:[["Margen neto neto","33.8%"],["Cargos","0.0%"],["Días de cobro","42"],["Octubre","$916K"]],
+  lectura:[
+   "Es el canal que mejor remunera el capital (33.8% de margen cobrando a 42 días) y el que más cae en el año: −$1.79M.",
+   "Avon es el 81% del canal: baja 25.0% en el año, pero en octubre vendió $916K, 147.4% más que un año antes.",
+   "Octubre fue la mejor señal del canal: +121.7% con 37.2% de margen."],
+  tabla:{head:["Cliente","Venta Ene–Oct","vs 2025","Margen neto neto","Días de cobro"],rows:[
+   ["Avon","$5.60M","−25.0%","32.3%","30"],["House of Fuller","$1.06M","−7.4%","38.7%","90"],["Fuller Internacional","$0.14M","nuevo","58.4%","90"]]},
+  postura:"Proteger y diversificar: el canal más rentable no puede depender de un solo cliente."},
+ {id:"mayoreo",sub:1,n:"Mayoreo",rt:"Gerardo Sordo",resp:["Comercial Mayoreo"],real:"$5.69M",pct:"5.3%",plan:"—",a25:"$6.00M",pill:["contra","−5.2% vs 2025"],
+  stats:[["Margen neto neto","15.2%"],["Días de cobro","31"],["Ticket por pieza","$14.5 (2025: $18.2)"],["Octubre","$859K"]],
+  lectura:[
+   "Cobra a ~31 días y crea valor con 15.2% de margen, pero el ticket por pieza cayó 20% ($14.5 contra $18.2).",
+   "Octubre vendió $859K (+83.7%) con margen de −1.1%: $508K fueron liquidación a Público en general a −13.6%.",
+   "El mayoreo que destruye valor es el que vende bajo costo: un solo cliente dejó −38.3% de margen sobre $652K."],
+  postura:"Mayoreo es la vía más rápida para convertir inventario en caja, con precio piso y con las liquidaciones registradas aparte."},
+ {id:"costo",n:"Costo directo",rt:"Compras · Félix (Planeación) · Noé (Operaciones)",resp:["Compras","Planeación","Operaciones"],real:"$53.93M",pct:"46.2%",plan:"47.9%",a25:"58.2%",pill:["favor","1.7 pp mejor que el plan"],
+  stats:[["Margen bruto","53.8%"],["Inventario en octubre","$37.17M"],["Días de inventario","210 al costo del año"],["Proveedores","$32.94M"]],
+  minis:[
+   {title:"Costo directo",sub:"% de la venta neta; línea: plan 47.9%",series:[{name:"Costo directo",vals:MES.map((_,i)=>D.cd[i]/D.vn[i]*100)}],ref:47.9,hi:[7,9],lab:[7,9],fmt:p1},
+   {title:"Inventario al cierre",sub:"millones de pesos",series:[{name:"Inventario",vals:D.inv}],hi:[9],lab:[0,9],fmt:v=>fM(v,1)}],
+  lectura:[
+   "Es la única línea mejor que el plan: 46.2% de la venta contra 47.9%. Deja 53.8% de margen bruto.",
+   "Falta estabilidad: el mes se mueve entre 41% y 54% (agosto 54.1%, octubre 48.7%).",
+   "El inventario llegó a $37.17M, el más alto del año: subió $5.09M en octubre, el mes de la segunda venta más baja. Equivale a 210 días del costo promedio del año.",
+   "Proveedores financian $32.94M (43% del activo): se está comprando por delante de la venta.",
+   "El inventario operativo a la 4ª semana de septiembre era $22.26M contra $32.08M en balance: $9.8M por conciliar.",
+   "Cinco productos con margen neto neto negativo venden $18.9M (17.6% del detalle), y dos anclas de volumen estaban en quiebre con semiterminado disponible."],
+  tabla:{head:["Producto con margen negativo","Venta Ene–Oct","Margen neto neto"],rows:[
+   ["Botella Peek 1 L (PET)","$8.58M","−13.2%"],["Jarra 2 L ovalada","$4.01M","−7.7%"],["Base contenedor ondas 500 ml","$3.49M","−5.2%"],["Contenedor 1 L con 2 divisiones","$1.91M","−2.2%"],["Botella Curva 650 ml","$0.92M","−8.1%"]]},
+  postura:"El costo ya está en meta. Ahora el objetivo de la línea es liberar caja: se compra y se produce contra pronóstico menos inventario."},
+ {info:1,n:"Margen bruto",real:"$62.75M",pct:"53.8%",plan:"52.1%",a25:"41.8%"},
+ {id:"nomina",n:"Nómina",rt:"Verónica Silva (RH) · Alejandro Gámez (DG)",resp:["RH","DG"],real:"$29.05M",pct:"24.9%",plan:"15.5%",a25:"23.0%",pill:["contra","+$4.36M sobre plan"],
+  stats:[["Promedio mensual","$2.91M"],["Octubre","$3.24M · 40.9% de la venta"],["Sueldos de las cuatro áreas","$21.00M"],["Sin área asignada","$8.05M"]],
+  minis:[{title:"Nómina mensual",sub:"millones de pesos",h:150,series:[{name:"Sueldos de las cuatro áreas",vals:D.areas},{name:"Sin área asignada",vals:D.sinArea,cls:"alert"}],lab:[6,7,9],fmt:v=>fM(v)}],
+  lectura:[
+   "Es el mayor desvío de gasto contra el plan: +$4.36M. Contra 2025 sube 18.2% (+$4.48M).",
+   "Los sueldos de las cuatro áreas están estables: entre $1.99M y $2.21M al mes, $21.00M en el año.",
+   "Lo que se mueve es el bloque sin área: $8.05M en el año (28% de la nómina), de $0.22M en julio a $1.40M en agosto. No tiene responsable.",
+   "En el comparativo contra 2025, ese bloque pasó de $1.86M a $8.05M mientras los sueldos por área bajaron $1.71M: ahí está todo el aumento.",
+   "La nómina alterna: los meses pares promedian $3.18M y los impares $2.63M. Apunta a un concepto bimestral, por confirmar.",
+   "Sueldo comercial sube 75.4% y mercadotecnia baja 84.7% contra 2025: hay reclasificaciones entre áreas que impiden leer cada una por separado."],
+  postura:"La plantilla se dimensiona al piso de venta, y ningún peso de nómina se queda sin área ni responsable."},
+ {id:"fletes",n:"Fletes",rt:"Noé (Logística)",resp:["Logística"],real:"$10.61M",pct:"9.1%",plan:"6.0%",a25:"7.2%",pill:["contra","+$0.99M sobre plan"],
+  stats:[["Abril–julio","11.4% de la venta"],["Septiembre–octubre","6.0% de la venta"],["Exceso sobre 6.0%","$3.61M en el año"],["vs 2025","+38.2%"]],
+  minis:[{title:"Fletes",sub:"% de la venta neta; línea: plan 6.0%",series:[{name:"Fletes",vals:MES.map((_,i)=>D.fle[i]/D.vn[i]*100)}],ref:6,hi:[3,4,5,6],lab:[6,9],fmt:p1}],
+  lectura:[
+   "A la venta real, 6.0% serían $7.00M: el año lleva $3.61M de exceso.",
+   "El desvío se generó entre abril y julio: 11.4% de la venta, $3.0M por encima del 6.0%.",
+   "Septiembre y octubre corrieron en 6.0%: el control ya funciona.",
+   "La prueba es noviembre y diciembre, los meses con más volumen programado."],
+  postura:"El flete se autoriza por embarque: pedido mínimo, consolidación y urgentes solo con visto bueno."},
+ {id:"otros",n:"Rentas y otros gastos",rt:"Raúl Andrés (Finanzas)",resp:["Finanzas"],real:"$12.03M",pct:"10.3%",plan:"6.3%",a25:"11.1%",pill:["contra","+$2.02M sobre plan"],
+  stats:[["Otros gastos","$7.15M · +$1.86M sobre plan"],["Otros gestionable","$2.93M · doble del plan"],["Otros variable","$1.51M · +$0.94M"],["Rentas","$488K al mes"]],
+  minis:[{title:"Otros gestionable",sub:"miles de pesos; línea: plan $143K al mes",series:[{name:"Otros gestionable",vals:D.oge}],ref:142513,hi:[9],lab:[7,9],fmt:fK}],
+  lectura:[
+   "Otros gastos rebasa el plan en $1.86M. El desvío está en lo gestionable (+$1.50M, el doble de lo presupuestado) y en lo variable (+$0.94M).",
+   "Lo fijo está controlado: va $0.50M por debajo del plan.",
+   "Octubre fue el mes más alto del año en gestionable: $365K contra $144K de plan.",
+   "Rentas es estable ($488K al mes). Pesa 4.2% de la venta, contra 3.0% del plan, porque la venta está abajo."],
+  postura:"Todo gasto gestionable tiene dueño, tope mensual y dictamen antes de comprometerse."},
+ {info:1,n:"EBITDA operativa",real:"$11.06M",pct:"9.5%",plan:"24.4%",a25:"0.5%"},
+ {id:"financieros",n:"Gastos financieros",rt:"Raúl Andrés (Finanzas) · sujeto a caja",resp:["Finanzas"],real:"$2.43M",pct:"2.1%",plan:"1.1%",a25:"1.8%",pill:["contra","+$0.71M sobre plan"],
+  stats:[["Septiembre + octubre","$1.56M"],["Promedio enero–agosto","$109K al mes"],["Deuda documentada","$20.38M"],["Octubre sobre la deuda","4.0% mensual"]],
+  minis:[
+   {title:"Gasto financiero",sub:"miles de pesos",series:[{name:"Gasto financiero",vals:D.fin}],hi:[8,9],lab:[9],fmt:fK},
+   {title:"Deuda documentada",sub:"millones de pesos",series:[{name:"Deuda documentada",vals:D.deuda}],hi:[7,8,9],lab:[6,9],fmt:v=>fM(v,1)}],
+  lectura:[
+   "Septiembre y octubre suman $1.56M: 64% del gasto financiero del año en dos meses. De enero a agosto promediaba $109K al mes.",
+   "Coincide con el salto de la deuda documentada: de $9.71M en julio a $21.78M en agosto. Hoy son $20.38M, 27% del activo.",
+   "Los $821K de octubre equivalen a 4.0% mensual sobre la deuda. No puede ser solo interés ordinario: hay que abrir la cuenta.",
+   "A este ritmo el gasto financiero anualizado es ≈ $9.3M, más que el EBITDA acumulado del año ($8.63M)."],
+  postura:"Finanzas responde por la estructura y el costo de la deuda. La caja para prepagar sale de inventario y cobranza: sin caja liberada, esta línea no baja."},
+ {id:"ebitda",n:"EBITDA",rt:"Alejandro Gámez (DG)",resp:["DG"],real:"$8.63M",pct:"7.4%",plan:"23.3%",a25:"−1.3%",pill:["contra","−$28.55M vs plan"],
+  stats:[["vs 2025","+$10.01M"],["EBITDA operativa","$11.06M · 9.5%"],["Meses con EBITDA negativo","3 de 10"],["Plan Ene–Oct","$37.18M"]],
+  lectura:[
+   "Mejora $10.01M contra 2025 gracias al margen bruto (+$18.01M), pero queda $28.55M abajo del plan.",
+   "De esa brecha, 72% es venta que no llegó (−$20.47M de margen bruto), 26% es gasto por encima del plan (−$7.37M) y 2% es gasto financiero.",
+   "Enero, agosto y octubre restaron $3.97M; los otros siete meses sumaron $12.60M."],
+  tabla:{head:["Escenario de cierre","Venta nov + dic","EBITDA nov–dic","EBITDA 2026"],rows:[
+   ["Tendencia del año (+9.0% vs 2025)","$22.01M","−$0.06M","$8.57M"],["Venta del flujo, gasto actual","$25.10M","+$1.60M","$10.23M"],["Venta de presupuesto, gasto actual","$29.51M","+$3.97M","$12.60M"],["Presupuesto 10+2 completo","$29.51M","+$6.61M","$15.23M"]]},
+  postura:"Dirección General tiene la vista global: cada línea responde por su cifra y sus compromisos, con las posturas de Finanzas como marco."},
+ {id:"caja",n:"Caja y balance (octubre)",rt:"Raúl Andrés (Finanzas) · Compras · Noé (Operaciones)",resp:["Finanzas","Compras","Operaciones"],real:"$4.58M",pct:"—",plan:"—",a25:"—",pill:["contra","Pasivo: 85% del activo"],
+  stats:[["Capital de trabajo","$15.86M"],["Prueba ácida","0.8"],["Capital contable","$11.26M"],["Caja sobre nómina","1.6 meses"]],
+  lectura:[
+   "Caja de $4.58M, equivalente a 1.6 meses de nómina. El pasivo es 85% del activo y el capital contable es $11.26M.",
+   "Clientes bajó a $11.63M (−$5.67M en octubre): la cobranza avanza. A ~90 días de cobro, la venta de octubre ($7.93M) entra en enero, el mes más apretado.",
+   "Inventario $37.17M + clientes $11.63M − proveedores $32.94M = $15.86M de capital de trabajo.",
+   "El resultado del ejercicio en balance es −$3.48M y el EBITDA del ER es +$8.63M: $12.11M por conciliar.",
+   "El flujo libre acumulado del modelo cierra octubre en −$15.1M."],
+  tabla:{head:["Balance","Septiembre","Octubre","Cambio"],rows:[
+   ["Caja e inversiones","$5.55M","$4.58M","−$0.96M"],["Clientes","$17.30M","$11.63M","−$5.67M"],["Inventarios","$32.08M","$37.17M","+$5.09M"],
+   ["Proveedores","$29.16M","$32.94M","+$3.78M"],["Deuda documentada","$21.40M","$20.38M","−$1.02M"],["Capital contable","$14.92M","$11.26M","−$3.67M"]]},
+  postura:"Primero la caja: inventario y cobranza pagan deuda antes que cualquier inversión."}
+];
+const LN={ventas:"Ventas",retail:"Ventas · Retail",catalogo:"Ventas · Catálogo",mayoreo:"Ventas · Mayoreo",costo:"Costo directo",nomina:"Nómina",fletes:"Fletes",otros:"Rentas y otros gastos",financieros:"Gastos financieros",caja:"Caja y balance",ebitda:"EBITDA"};
+
+/* ---------- Compromisos ---------- */
+const COMP=[
+ {n:1,l:"ventas",k:1,t:"Corte semanal de pedidos confirmados contra el punto de equilibrio, por canal. Primer corte: venta de noviembre al día 10.",r:["Comercial"],f:"2026-11-13",fn:"después, cada martes",m:"Noviembre ≥ $13.9M de venta neta (cifra del flujo); ningún mes por debajo de $10.5M.",i:"Cada $1M de venta neta aporta ≈ $0.54M de EBITDA."},
+ {n:2,l:"retail",k:1,t:"Precio piso con Grupo Walmart: propuesta de precio o fecha de salida para los cinco productos con margen neto neto negativo (Botella Peek 1 L, Jarra 2 L ovalada, Base ondas 500 ml, Contenedor 1 L con 2 divisiones y Botella Curva 650 ml).",r:["Comercial Retail"],a:["Compras"],f:"2026-11-27",fn:"aplica en pedidos de enero",m:"Los cinco productos con margen ≥ 0 o con fecha de salida.",i:"≈ $1.74M que hoy se pierden en diez meses sobre $18.9M de venta."},
+ {n:3,l:"retail",t:"Recuperar las dos cuentas con margen sano que más cayeron: Tiendas 3B (sin pedidos en septiembre y octubre) y Chedraui (−79.6% en octubre). Reunión con cada comprador y propuesta de surtido para el 1T27.",r:["Comercial Retail"],f:"2026-11-27",fn:"pedidos de enero colocados: vie 18 de dic",m:"Pedido de enero colocado en ambas; Tiendas 3B de regreso a ≈ $1.06M al mes (ritmo 2025).",i:"−$1.78M (Tiendas 3B) y −$1.06M (Chedraui) contra 2025."},
+ {n:4,l:"catalogo",t:"Calendario de campañas del 1T27 con Avon y Fuller: productos, volúmenes y fechas confirmados por escrito.",r:["Comercial Catálogo"],f:"2026-12-04",m:"Sostener ≥ $870K al mes (ritmo 2025); octubre fue $916K.",i:"El canal va −$1.79M contra 2025 con el mejor margen (33.8%)."},
+ {n:5,l:"catalogo",t:"Tres prospectos de venta por catálogo adicionales a Avon y Fuller, con propuesta enviada. Hoy Avon es el 81% del canal.",r:["Comercial Catálogo"],f:"2026-12-18",m:"Tres propuestas enviadas y su respuesta registrada.",i:"Reduce la dependencia de un solo cliente en el canal más rentable."},
+ {n:6,l:"mayoreo",t:"Lista de precios mínimos de mayoreo: ninguna venta bajo costo total sin autorización de DG, y liquidaciones registradas por separado del canal.",r:["Comercial Mayoreo"],a:["Finanzas"],f:"2026-11-20",m:"Cero facturas bajo el mínimo sin folio de autorización a partir de diciembre.",i:"Un solo cliente a −38.3% de margen costó ≈ $250K en el año."},
+ {n:7,l:"mayoreo",t:"Liquidación dirigida del inventario lento: lista valorizada con precio piso autorizado y cobro a 30 días o menos.",r:["Comercial Mayoreo"],a:["Planeación"],f:"2026-11-20",fn:"lista valorizada ese día; cierre jue 31 de dic",m:"50% de la lista desplazado al 31 de diciembre.",i:"Convierte inventario en caja en ~30 días."},
+ {n:8,l:"mayoreo",t:"Plan de crecimiento con cuentas de mayoreo que pagan a 30 días y dejan margen de 15% o más.",r:["Comercial Mayoreo"],f:"2026-12-04",m:"Mayoreo ≥ $650K al mes con margen ≥ 15% en el 1T27 (2026: $569K al mes).",i:"≈ $80K más de venta al mes, cobrada a ~31 días."},
+ {n:9,l:"costo",k:1,t:"Freno de compras con el OTB: comprar y producir como máximo 70 centavos por cada peso de costo vendido, hasta alcanzar la meta de inventario.",r:["Planeación"],a:["Compras"],f:"2026-11-13",fn:"vigente desde ese día; metas al 31 de dic y al 26 de feb",m:"Inventario ≤ $33.5M al 31 de diciembre y ≤ $30.0M al 26 de febrero (hoy $37.17M).",i:"Libera ≈ $3.7M de caja a diciembre y $7.2M a febrero."},
+ {n:10,l:"costo",t:"Conciliar el inventario contable ($32.08M a septiembre) contra el operativo ($22.26M a la 4ª semana de septiembre): cerrar órdenes de producción abiertas en semiterminado y corregir valuaciones.",r:["Operaciones"],f:"2026-12-04",m:"Diferencia de $9.8M explicada al 100% y ajustes registrados en el cierre de noviembre.",i:"Da una base confiable a la meta de inventario."},
+ {n:11,l:"costo",t:"Seguir el proceso de armado y mejorar los tiempos.",r:["Operaciones"],f:"2026-11-20",m:"Tiempo de armado medido cada semana y a la baja.",i:"Más producto final disponible para vender sin comprar material."},
+ {n:12,l:"costo",t:"Ficha de costo de los cinco productos con margen negativo (resina, peso, maquila y empaque) y decisión por producto: bajar costo, subir precio o salir. No producir Peek 1 L ni Jarra 2 L mientras no tengan margen.",r:["Compras"],a:["Planeación"],f:"2026-11-27",m:"Ficha y decisión por producto; costo directo ≤ 47.0% de la venta en noviembre y diciembre.",i:"Sostiene el margen bruto en 53% o más."},
+ {n:13,l:"nomina",k:1,t:"Realizar ajustes en la nómina.",r:["RH"],a:["Finanzas"],f:"2026-11-20",m:"Ajustes definidos y aplicados en la nómina.",i:"Acerca la nómina al tope mensual de $2.91M."},
+ {n:14,l:"nomina",k:1,t:"Tope de nómina en noviembre y diciembre igual al promedio real del año, sin altas ni reemplazos sin visto bueno de Finanzas y DG. Aguinaldo y finiquitos se reportan aparte.",r:["RH"],f:"2026-11-13",fn:"vigente desde ese día; evaluación jue 31 de dic",m:"Nómina de noviembre y de diciembre ≤ $2.91M cada una.",i:"Evita repetir octubre: $3.24M, 40.9% de la venta."},
+ {n:15,l:"nomina",t:"Plantilla objetivo 2027 por área y ejecución de las desvinculaciones contempladas, con costo de salida y ahorro mensual documentados.",r:["DG"],a:["RH"],f:"2026-12-11",m:"Propuesta: nómina promedio ≤ $2.70M al mes en el 1T27 (−7% contra 2026).",i:"≈ $205K al mes; $2.5M al año."},
+ {n:16,l:"nomina",t:"Nómina comercial ligada a resultado: cuota por vendedor y por canal, y comisión sobre lo cobrado.",r:["DG"],a:["RH"],f:"2026-12-04",fn:"aplica en la nómina de enero",m:"Esquema aplicado en enero; costo comercial medido cada mes como porcentaje de la venta (hoy 5.1%; 8.7% en octubre).",i:"El pago se mueve con lo vendido y cobrado, no con la plantilla."},
+ {n:17,l:"fletes",k:1,t:"Presentar una estrategia puntual por parte del departamento de Logística.",r:["Logística"],f:"2026-11-17",m:"Estrategia presentada, con meta de fletes ≤ 6.0% de la venta (septiembre–octubre: 6.0%).",i:"≈ $31K por cada $1M vendido contra el ritmo del año (9.1%)."},
+ {n:18,l:"caja",t:"Antigüedad de saldos y calendario de pagos acordado con los diez proveedores principales. Proveedores suma $32.94M, 51% del pasivo.",r:["Compras"],a:["Finanzas"],f:"2026-12-04",m:"Calendario acordado con los diez principales; cero paros de suministro por pago.",i:"Protege el abasto de la temporada alta."},
+ {n:19,l:"ebitda",t:"Confirmar o cancelar la inversión en moldes de noviembre y diciembre ($0.2M cada mes en el flujo) bajo la regla de no invertir en moldes hasta generar caja.",r:["DG"],f:"2026-11-13",m:"Decisión registrada.",i:"$0.4M de caja en dos meses."},
+ {n:20,l:"ebitda",t:"Presupuesto 2027 sobre el escenario conservador de venta, con el gasto dimensionado a un punto de equilibrio menor al actual ($10.5M al mes). La meta comercial alta se paga con variable, no con estructura.",r:["DG"],a:["Planeación Estratégica"],f:"2026-12-11",m:"Presupuesto 2027 autorizado.",i:"Hoy el punto de equilibrio del ER promedia $10.5M al mes."}
+];
+const PERS={"Comercial":["Gerardo Sordo","Comercial"],"Comercial Retail":["Julieta Cano","Retail"],"Comercial Catálogo":["Valerie","Catálogo"],"Comercial Mayoreo":["Gerardo Sordo","Mayoreo"],"RH":["Verónica Silva","RH"],"DG":["Alejandro Gámez","DG"],"Finanzas":["Raúl Andrés","Finanzas"],"Logística":["Noé","Logística"],"Operaciones":["Noé","Operaciones"],"Planeación":["Félix","Planeación"]};
+const quien=k=>PERS[k]?PERS[k][0]+" ("+PERS[k][1]+")":k;
+const persona=k=>PERS[k]?PERS[k][0]:k;
+const DS=["dom","lun","mar","mié","jue","vie","sáb"],MS=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+function fFecha(iso){const p=iso.split("-").map(Number),dt=new Date(Date.UTC(p[0],p[1]-1,p[2]));return DS[dt.getUTCDay()]+" "+p[2]+" de "+MS[p[1]-1]+(p[0]!==2026?" de "+p[0]:"");}
+
+/* ---------- Tabla ER + detalle ---------- */
+const det=$("#det"),erBody=$("#tblER tbody");let current="retail";
+function renderER(){
+  LINEAS.forEach(L=>{
+    const tr=H("tr",L.info?"info":L.fix?"fix":"sel"+(L.sub?" subr":""),null,erBody);
+    const c0=H("td","ln",L.n,tr);if(L.rt)H("small","rsp",L.rt,c0);H("td","num",L.real,tr);H("td","num",L.pct,tr);H("td","num hide-s",L.plan,tr);H("td","num hide-s",L.a25,tr);
+    const td=H("td",null,null,tr);if(L.pill)H("span","pill "+L.pill[0],L.pill[1],td);
+    if(L.id){tr.dataset.id=L.id;tr.tabIndex=0;tr.setAttribute("role","button");tr.setAttribute("aria-pressed","false");
+      tr.addEventListener("click",()=>select(L.id,true));
+      tr.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();select(L.id,true);}});}
+  });
+}
+function renderDet(id){
+  const L=LINEAS.find(x=>x.id===id);det.innerHTML="";
+  const h=H("div","det-h",null,det);H("h3",null,L.n,h);L.resp.forEach(r=>H("span","tag",quien(r),h));
+  const st=H("div","stats",null,det);L.stats.forEach(s=>{const d=H("div","stat",null,st);H("span","lbl-s",s[0],d);H("div","v",s[1],d);});
+  if(L.minis){const m=H("div","minis"+(L.minis.length===1?" one":""),null,det);L.minis.forEach(o=>mini(m,o));}
+  const ul=H("ul","bul",null,det);L.lectura.forEach(t=>H("li",null,t,ul));
+  if(L.tabla){const w=H("div",null,null,det);tbl(w,L.tabla.head,L.tabla.rows);if(L.tabla.nota)H("p","note",L.tabla.nota,w);}
+  const p=H("div","postura",null,det);H("span","lbl-s","Postura",p);H("span",null,L.postura,p);
+  const cs=COMP.filter(c=>c.l===id);
+  if(cs.length){const w=H("div",null,null,det);H("span","lbl-s","Compromisos de esta línea",w);const cl=H("ul","cl",null,w);
+    cs.forEach(c=>{const li=H("li",null,null,cl);H("span","n",String(c.n),li);H("span",null,c.t,li);H("span","f",fFecha(c.f),li);H("span","r",c.r.map(quien).join(" · ")+(c.a?" · apoya "+c.a.map(quien).join(", "):"")+" · Meta: "+c.m,li);});}
+}
+function select(id,user){
+  current=id;
+  erBody.querySelectorAll("tr.sel").forEach(tr=>{const on=tr.dataset.id===id;tr.classList.toggle("on",on);tr.setAttribute("aria-pressed",on?"true":"false");});
+  renderDet(id);
+  if(user&&window.innerWidth<=1260){const rm=window.matchMedia("(prefers-reduced-motion: reduce)").matches;det.scrollIntoView({behavior:rm?"auto":"smooth",block:"start"});}
+}
+
+/* ---------- Plan ---------- */
+const RESP=["Todos","Gerardo Sordo","Julieta Cano","Valerie","Compras","Félix","Noé","Verónica Silva","Raúl Andrés","Alejandro Gámez"];
+const st={resp:"Todos",key:false,ord:"linea"};
+const planBody=$("#tblPlan tbody");
+function visibles(){
+  let v=COMP.filter(c=>(st.resp==="Todos"||c.r.some(k=>persona(k)===st.resp)||(c.a&&c.a.some(k=>persona(k)===st.resp)))&&(!st.key||c.k));
+  if(st.ord==="fecha")v=v.slice().sort((a,b)=>a.f<b.f?-1:a.f>b.f?1:a.n-b.n);
+  return v;
+}
+function renderPlan(){
+  planBody.innerHTML="";const v=visibles();
+  v.forEach(c=>{
+    const tr=H("tr",null,null,planBody);H("td","c-n",String(c.n),tr);
+    const t=H("td","c-t",null,tr);H("span","ln-t",LN[c.l],t);if(c.k)H("span","key","Clave",t);H("div",null,c.t,t);
+    const r=H("td","c-r",c.r.map(quien).join(" · "),tr);r.dataset.l="Responsable";if(c.a)H("small",null,"Apoya: "+c.a.map(quien).join(", "),r);
+    const f=H("td","c-f",fFecha(c.f),tr);f.dataset.l="Fecha";if(c.fn)H("small",null,c.fn,f);
+    const m=H("td","c-m",c.m,tr);m.dataset.l="Meta";
+    const i=H("td","c-i",c.i,tr);i.dataset.l="Impacto";
+  });
+  $("#count").textContent=v.length+" de "+COMP.length+" compromisos"+(st.resp!=="Todos"?" · "+st.resp+" como responsable o apoyo":"")+(st.key?" · solo clave":"");
+}
+const fResp=$("#fResp");
+RESP.forEach(r=>{const b=H("button","chip",r,fResp);b.type="button";b.setAttribute("aria-pressed",r==="Todos"?"true":"false");
+  b.addEventListener("click",()=>{st.resp=r;fResp.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));renderPlan();});});
+$("#fKey").textContent="Solo los "+COMP.filter(c=>c.k).length+" clave";
+$("#fKey").addEventListener("click",e=>{st.key=!st.key;e.currentTarget.setAttribute("aria-pressed",st.key?"true":"false");renderPlan();});
+function setOrd(o){st.ord=o;$("#oLinea").setAttribute("aria-pressed",o==="linea"?"true":"false");$("#oFecha").setAttribute("aria-pressed",o==="fecha"?"true":"false");renderPlan();}
+$("#oLinea").addEventListener("click",()=>setOrd("linea"));$("#oFecha").addEventListener("click",()=>setOrd("fecha"));
+$("#copy").addEventListener("click",()=>{
+  const v=visibles(),head=["COMPROMISO","RESPONSABLE","FECHA LÍMITE","STATUS","ETIQUETA","# Reunión","Folio"].join("\t");
+  const txt=[head].concat(v.map(c=>[c.t.replace(/\s+/g," "),c.r.map(quien).join(" / "),fFecha(c.f),"Sin iniciar","","",""].join("\t"))).join("\n");
+  const ta=$("#tsv"),ok=()=>{$("#count").textContent="Copiados "+v.length+" compromisos. Pégalos en el tracker.";};
+  const fb=()=>{ta.hidden=false;ta.value=txt;ta.focus();ta.select();$("#count").textContent="Selecciona y copia el texto de abajo para pegarlo en el tracker.";};
+  try{navigator.clipboard.writeText(txt).then(ok,fb);}catch(err){fb();}
+});
+
+/* ---------- Arranque ---------- */
+renderER();select("retail",false);renderPlan();drawBridge();drawMain();tableMain();sim();
+let rt=0,lastW=window.innerWidth;
+window.addEventListener("resize",()=>{if(window.innerWidth===lastW)return;lastW=window.innerWidth;clearTimeout(rt);rt=setTimeout(()=>{drawMain();renderDet(current);},160);});
+})();
+</script>
+
+</body></html>
